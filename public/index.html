@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Meme-ory Game</title>
+  </head>
+  <body>
+    <div class="title">
+      <h1>
+        Meme-ory
+        <br />
+        Game
+      </h1>
+      <p style="font-size:50px;" id="best">
+        Best: -
+      </p>
+      <a href="#demo" class="button" id="start">Start!</a>
+    </div>
+    <div class="grid-container" id="flex-container"></div>
+    <br />
+    <br />
+  </body>
+  <script>
+    var prev = -1;
+    var counter = 0;
+    var score = 0;
+    var correct = 0;
+
+    function setCookie(cname, cvalue, exdays) {
+      var d = new Date();
+      d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
+      var expires = "expires=" + d.toUTCString();
+      document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    }
+
+    function getCookie(cname) {
+      var ca = document.cookie.split(";");
+      for (var i = 0; i < ca.length; i++) {
+        if (ca[i].includes(cname)) {
+          return ca[i].split("=")[1].trim();
+        }
+      }
+      return "";
+    }
+
+    var oldBest = Number(getCookie("best"));
+    if (oldBest === 0) {
+      document.getElementById("best").innerHTML = "Best: -";
+    } else {
+      document.getElementById("best").innerHTML = "Best: " + oldBest;
+    }
+
+    function flipTwice(event) {
+      var element = event.target;
+      if (element.classList.contains("front")) {
+        element = element.parentNode;
+      } else {
+        return;
+      }
+      if (element.style.transform == "rotateY(180deg)") {
+        // already flipped case
+        return;
+      }
+
+      counter++;
+      flip(element);
+      score++;
+      var output = document.getElementById("demo");
+      output.innerHTML = score;
+
+      if (counter % 2 === 0) {
+        // 2nd card of a pair flipped case
+        if (element.id === prev.id) {
+          // pair match case
+          correct += 2;
+          if (correct >= 24) {
+            // WIN case
+            output.innerHTML = "Game Over!<br />" + score;
+            if (score < oldBest || oldBest === 0) {
+              setCookie("best", score, 360 * 7);
+              document.getElementById("best").innerHTML = "Best: " + score;
+            }
+          }
+          prev = -1;
+          return;
+        } else {
+          // pair not match case
+          document
+            .getElementById("flex-container")
+            .removeEventListener("click", flipTwice);
+          setTimeout(function() {
+            flip(element);
+            flip(prev);
+            prev = -1;
+            document
+              .getElementById("flex-container")
+              .addEventListener("click", flipTwice);
+            return;
+          }, 1000);
+        }
+      } else {
+        // 1st card of a pair flipped case
+        prev = element;
+        return;
+      }
+    }
+    function flip(element) {
+      if (element.className === "card") {
+        if (element.style.transform == "rotateY(180deg)") {
+          element.style.transform = "rotateY(0deg)";
+        } else {
+          element.style.transform = "rotateY(180deg)";
+        }
+      }
+    }
+
+    var deck = [];
+    // Create array (deck) of card elements by looping through gifs.
+    for (var g = 0; g < 12; g++) {
+      // Card element structure should look like this basically
+      // <div class="container">
+      //   <div class="card" onclick="flipTwice(event)" id="1">
+      //     <div class="front" />
+      //     <div class="back" />
+      var container = document.createElement("div");
+      container.classList.add("container");
+      var card = document.createElement("div");
+      card.classList.add("card");
+      card.id = g;
+      var front = document.createElement("div");
+      front.classList.add("front");
+      var back = document.createElement("div");
+      back.classList.add("back");
+      // create image instead of changing background
+      // var img = new Image();
+      // add src attribute
+      // img.src = "gifs/giphy" + g + ".gif";
+
+      back.style.background = "url('gifs/giphy" + g + ".gif') no-repeat center";
+      back.style.backgroundSize = "cover";
+      // when image is loaded, add it to my div
+      // img.setAttribute("height", "125px");
+      // img.setAttribute("width", "125px");
+      // back.appendChild(img);
+      card.appendChild(front);
+      card.appendChild(back);
+      container.appendChild(card);
+      var container2 = container.cloneNode(true);
+      deck.push(container);
+      deck.push(container2);
+    }
+
+    /**
+     * Randomly shuffle an array
+     * https://stackoverflow.com/a/2450976/1293256
+     * @param  {Array} array The array to shuffle
+     * @return {String}      The first item in the shuffled array
+     */
+    var shuffle = function(array) {
+      var currentIndex = array.length;
+      var temporaryValue, randomIndex;
+      // While there remain elements to shuffle...
+      while (0 !== currentIndex) {
+        // Pick a remaining element...
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex -= 1;
+        // And swap it with the current element.
+        temporaryValue = array[currentIndex];
+        array[currentIndex] = array[randomIndex];
+        array[randomIndex] = temporaryValue;
+      }
+      return array;
+    };
+
+    shuffle(deck);
+
+    var appendCounter = 0;
+    // Loop through array (deck) of cards elements created and add to document.
+    for (var card of deck) {
+      if (appendCounter === 12) {
+        var scoreCounter = document.createElement("span");
+        scoreCounter.id = "demo";
+        scoreCounter.innerHTML = score;
+        // scoreCounter.innerHTML = "Game Over!<br />" + 5;
+        document.getElementById("flex-container").appendChild(scoreCounter);
+      }
+      document.getElementById("flex-container").appendChild(card);
+      appendCounter++;
+    }
+
+    // Start/reset game.
+    function startGame(event) {
+      prev = -1;
+      counter = 0;
+      score = 0;
+      correct = 0;
+      var containerNode = document.getElementById("flex-container");
+      // for (var i = 0; i < 12; i++) {
+      //   document.getElementById(i).style.transform = "rotateY(0deg)";
+      // }
+      while (containerNode.hasChildNodes()) {
+        containerNode.removeChild(containerNode.lastChild);
+      }
+      shuffle(deck);
+      var appendCounter = 0;
+      for (var card of deck) {
+        if (appendCounter === 12) {
+          var scoreCounter = document.createElement("span");
+          scoreCounter.id = "demo";
+          scoreCounter.innerHTML = score;
+          document.getElementById("flex-container").appendChild(scoreCounter);
+        }
+        card.firstChild.style.transform = "rotateY(0deg)";
+        document.getElementById("flex-container").appendChild(card);
+        appendCounter++;
+      }
+      // for (var i = 0; i < 12; i++) {
+      //   document.getElementById(i).style.transform = "rotateY(0deg)";
+      // }
+    }
+
+    // Add listeners once DOM loaded.
+    function addListeners() {
+      document
+        .getElementById("flex-container")
+        .addEventListener("click", flipTwice);
+      document.getElementById("start").addEventListener("click", startGame);
+      return;
+    }
+    document.addEventListener("DOMContentLoaded", addListeners);
+  </script>
+</html>
